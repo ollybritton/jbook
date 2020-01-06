@@ -24,7 +24,7 @@ $ python3 -m pip install jrnl # For other platforms
 ```
 
 ## Usage
-To render any journal made with `jrnl`, just type `jbook` followed by the its name.
+To render any journal made with `jrnl`, just type `jbook` followed by the its name. Your broswer should pop open on the website generated.
 
 ```bash
 $ jbook <name of jrnl>
