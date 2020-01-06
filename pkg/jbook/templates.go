@@ -38,11 +38,34 @@ func Summary(journal *Journal) string {
 
 	tmpl, err := template.New("SUMMARY.md").Parse(f)
 	if err != nil {
-		logger.Fatalf("Cannot get parse template for embedded 'SUMMARY.md' asset: %v", err)
+		logger.Fatalf("Cannot get parsed template for embedded 'SUMMARY.md' asset: %v", err)
+	}
+
+	type group struct {
+		Month   string
+		Link    string
+		Entries []*Entry
+	}
+
+	entries := []group{}
+
+	var curr string
+	for _, entry := range journal.Entries {
+		if len(entries) == 0 || curr != entry.Date.Format("January 2006") {
+			entries = append(entries, group{
+				entry.Date.Format("January 2006"),
+				"entries/" + entry.FileDate() + ".md",
+				[]*Entry{},
+			})
+
+			curr = entry.Date.Format("January 2006")
+		}
+
+		entries[len(entries)-1].Entries = append(entries[len(entries)-1].Entries, entry)
 	}
 
 	var out bytes.Buffer
-	tmpl.Execute(&out, journal)
+	tmpl.Execute(&out, entries)
 
 	return out.String()
 }

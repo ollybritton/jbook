@@ -7,15 +7,68 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
+	"time"
 )
 
 // Entry represents a journal entry.
 type Entry struct {
-	Title   string `json:"title"`
-	Body    string `json:"body"`
-	Date    string `json:"date"`
-	Time    string `json:"time"`
-	Starred bool   `json:"starred"`
+	Title   string
+	Body    string
+	Starred bool
+
+	Date time.Time
+
+	offset time.Time
+}
+
+// UnmarshalJSON will unmarshal a JSON entry.
+func (e *Entry) UnmarshalJSON(j []byte) error {
+	var rawStrings map[string]interface{}
+
+	err := json.Unmarshal(j, &rawStrings)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range rawStrings {
+		switch v := fmt.Sprint(v); strings.ToLower(k) {
+		case "title":
+			e.Title = v
+
+		case "body":
+			e.Body = v
+
+		case "starred":
+			e.Starred = v == "true"
+
+		// f*** you parsing dates in go
+		case "date":
+			e.Date, err = time.Parse("2006-01-02", v)
+			if err != nil {
+				return err
+			}
+
+		case "time":
+			e.offset, err = time.Parse("15:04", v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	e.Date = time.Date(e.Date.Year(), e.Date.Month(), e.Date.Day(), e.offset.Hour(), e.offset.Minute(), 0, 0, time.Local)
+	return nil
+}
+
+// TitleDate returns a formatted date that is suitable for use in the sidebar of the mdbook.
+func (e *Entry) TitleDate() string {
+	return e.Date.Format("2006-01-02 @ 15:04 PM")
+}
+
+// FileDate returns a formatted date that is suitable for use as a filename.
+func (e *Entry) FileDate() string {
+	return e.Date.Format(time.RFC3339)
 }
 
 // Journal represents the json-exported jrnl.
@@ -124,8 +177,8 @@ func CreateSource(journal *Journal, location string) string {
 	readme := EntriesReadme()
 	f.Write([]byte(readme))
 
-	for i, entry := range journal.Entries {
-		name := fmt.Sprintf("%d.md", i)
+	for _, entry := range journal.Entries {
+		name := fmt.Sprintf("%s.md", entry.FileDate())
 
 		f, err = os.Create(path.Join(dir, "src", "entries", name))
 		if err != nil {
