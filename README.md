@@ -17,6 +17,7 @@ brew install mdbook
 [Alternative installation instructions for `mdbook` can be found here.](https://github.com/rust-lang/mdBook#installation)
 
 ## Usage
+
 ```
 $ jbook <name of jrnl>
 ```
